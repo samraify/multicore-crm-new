@@ -17,6 +17,6 @@ public class Role {
     @Column(nullable = false, unique = true)
     private RoleName name;
 
-    public enum RoleName { ADMIN, MANAGER, SUPPORT, SALES, ANALYST }
+    public enum RoleName { ADMIN, OWNER, STAFF, CUSTOMER }
 }
 
