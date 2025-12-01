@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+
 public class SecurityConfig {
 
     private final CustomUserDetailsService customUserDetailsService;
@@ -65,5 +66,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-
 
