@@ -5,12 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterRequest {
+public class CreateStaffDTO {
     @NotBlank(message = "Full name is required")
     private String fullName;
 
@@ -19,9 +18,12 @@ public class RegisterRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
     @NotBlank(message = "Phone is required")
     private String phone;
+
+    private Long businessId;
+
+    private com.multicore.crm.entity.Role.RoleType role;
 }

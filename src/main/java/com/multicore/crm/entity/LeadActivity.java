@@ -1,38 +1,51 @@
 package com.multicore.crm.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "lead_activities")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class LeadActivity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long businessId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lead_id", nullable = false)
+    private Lead lead;
 
     @Column(nullable = false)
-    private Long leadId; // or @ManyToOne Lead
-
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ActivityType type;
+    private ActivityType activityType;
 
-    private String note;
+    @Column(nullable = true, columnDefinition = "TEXT")
+    private String description;
 
+    // Score increment for this activity (increases lead score)
     @Column(nullable = false)
+    private Integer scorePoints = 0;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    private Long userId; // or @ManyToOne User
-
-    public enum ActivityType { CALL, EMAIL, MEETING, NOTE }
-
     @PrePersist
-    public void prePersist() {
+    protected void onCreate() {
         createdAt = LocalDateTime.now();
+    }
+
+    public enum ActivityType {
+        CALL, EMAIL, MEETING, NOTE, TASK_COMPLETED, ENGAGEMENT, OTHER
     }
 }

@@ -3,136 +3,168 @@ package com.multicore.crm.service;
 import com.multicore.crm.dto.CreateLeadDTO;
 import com.multicore.crm.dto.LeadDTO;
 import com.multicore.crm.dto.UpdateLeadDTO;
+import com.multicore.crm.entity.Business;
 import com.multicore.crm.entity.Customer;
 import com.multicore.crm.entity.Lead;
+import com.multicore.crm.entity.User;
+import com.multicore.crm.repository.BusinessRepository;
 import com.multicore.crm.repository.CustomerRepository;
 import com.multicore.crm.repository.LeadRepository;
-import com.multicore.crm.service.LeadService;
-import lombok.RequiredArgsConstructor;
+import com.multicore.crm.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class LeadServiceImpl implements LeadService {
 
     private final LeadRepository leadRepository;
+    private final BusinessRepository businessRepository;
+    private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
+
+    public LeadServiceImpl(LeadRepository leadRepository, BusinessRepository businessRepository,
+                           UserRepository userRepository, CustomerRepository customerRepository) {
+        this.leadRepository = leadRepository;
+        this.businessRepository = businessRepository;
+        this.userRepository = userRepository;
+        this.customerRepository = customerRepository;
+    }
 
     @Override
     public LeadDTO createLead(CreateLeadDTO dto) {
-        Lead lead = new Lead();
-        lead.setBusinessId(dto.getBusinessId());
-        lead.setCustomerId(dto.getCustomerId());
-        lead.setName(dto.getName());
-        lead.setEmail(dto.getEmail());
-        lead.setPhone(dto.getPhone());
-        leadRepository.save(lead);
-        return toDTO(lead);
+        Business business = businessRepository.findById(dto.getBusinessId())
+                .orElseThrow(() -> new RuntimeException("Business not found"));
+
+        User assigned = null;
+        if (dto.getAssignedToId() != null) {
+            assigned = userRepository.findById(dto.getAssignedToId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            if (assigned.getBusiness() != null && !assigned.getBusiness().getId().equals(dto.getBusinessId())) {
+                throw new RuntimeException("User does not belong to this business");
+            }
+        }
+
+        Lead lead = Lead.builder()
+                .name(dto.getName())
+                .email(dto.getEmail())
+                .phone(dto.getPhone())
+                .company(dto.getCompany())
+                .jobTitle(dto.getJobTitle())
+                .business(business)
+                .assignedTo(assigned)
+                .status(Lead.LeadStatus.NEW)
+                .score(0)
+                .notes(dto.getNotes())
+                .build();
+
+        Lead saved = leadRepository.save(lead);
+        log.info("Lead created: {}", saved.getId());
+        return convertToDTO(saved);
     }
 
     @Override
     public LeadDTO getLead(Long id) {
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found"));
-        return toDTO(lead);
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
+        return convertToDTO(lead);
     }
 
     @Override
     public List<LeadDTO> getAllLeads(Long businessId) {
-        return leadRepository.findByBusinessId(businessId)
-                .stream().map(this::toDTO).toList();
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Business not found"));
+        return business.getLeads().stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
     @Override
     public LeadDTO updateLead(Long id, UpdateLeadDTO dto) {
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found"));
-
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
         if (dto.getName() != null) lead.setName(dto.getName());
         if (dto.getEmail() != null) lead.setEmail(dto.getEmail());
         if (dto.getPhone() != null) lead.setPhone(dto.getPhone());
+        if (dto.getCompany() != null) lead.setCompany(dto.getCompany());
+        if (dto.getJobTitle() != null) lead.setJobTitle(dto.getJobTitle());
         if (dto.getStatus() != null) lead.setStatus(dto.getStatus());
         if (dto.getScore() != null) lead.setScore(dto.getScore());
-
-        leadRepository.save(lead);
-        return toDTO(lead);
+        if (dto.getNotes() != null) lead.setNotes(dto.getNotes());
+        Lead updated = leadRepository.save(lead);
+        return convertToDTO(updated);
     }
 
     @Override
     public void deleteLead(Long id) {
-        leadRepository.deleteById(id);
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
+        leadRepository.delete(lead);
+        log.info("Lead deleted: {}", id);
     }
 
     @Override
     public LeadDTO updateStatus(Long id, String status) {
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found"));
-
-        lead.setStatus(Lead.LeadStatus.valueOf(status.toUpperCase()));
-        leadRepository.save(lead);
-        return toDTO(lead);
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
+        lead.setStatus(Lead.LeadStatus.valueOf(status));
+        Lead updated = leadRepository.save(lead);
+        return convertToDTO(updated);
     }
 
     @Override
     public LeadDTO updateScore(Long id, Integer score) {
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found"));
-
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
         lead.setScore(score);
-        leadRepository.save(lead);
-        return toDTO(lead);
+        Lead updated = leadRepository.save(lead);
+        return convertToDTO(updated);
     }
 
     @Override
     public LeadDTO convertToCustomer(Long id) {
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lead not found"));
-
-        Customer customer = new Customer();
-        customer.setName(lead.getName());
-        customer.setEmail(lead.getEmail());
-        customer.setPhone(lead.getPhone());
-        customer.setBusinessId(lead.getBusinessId());
-
-        customerRepository.save(customer);
-
-        lead.setStatus(Lead.LeadStatus.WON);
-        lead.setCustomerId(customer.getId());
-        leadRepository.save(lead);
-
-        return toDTO(lead);
-    }
-
-    @Override
-    public List<LeadDTO> filterLeads(Long businessId, Lead.LeadStatus status, Integer minScore, Integer maxScore) {
-        List<Lead> leads = leadRepository.findAll(); // Or use dynamic queries
-        return leads.stream()
-                .filter(l -> businessId == null || l.getBusinessId().equals(businessId))
-                .filter(l -> status == null || l.getStatus() == status)
-                .filter(l -> minScore == null || l.getScore() >= minScore)
-                .filter(l -> maxScore == null || l.getScore() <= maxScore)
-                .map(this::toDTO)
-                .toList();
+        Lead lead = leadRepository.findById(id).orElseThrow(() -> new RuntimeException("Lead not found"));
+        Customer customer = Customer.builder()
+                .name(lead.getName())
+                .email(lead.getEmail())
+                .phone(lead.getPhone())
+                .business(lead.getBusiness())
+                .source("converted_from_lead")
+                .build();
+        Customer saved = customerRepository.save(customer);
+        log.info("Lead {} converted to Customer {}", id, saved.getId());
+        return convertToDTO(lead);
     }
 
     @Override
     public List<LeadDTO> searchByName(String name) {
-        return leadRepository.findByNameContainingIgnoreCase(name)
-                .stream().map(this::toDTO).toList();
+        return leadRepository.findAll().stream()
+                .filter(l -> l.getName() != null && l.getName().toLowerCase().contains(name.toLowerCase()))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
-    private LeadDTO toDTO(Lead lead) {
-        LeadDTO dto = new LeadDTO();
-        dto.setId(lead.getId());
-        dto.setBusinessId(lead.getBusinessId());
-        dto.setCustomerId(lead.getCustomerId());
-        dto.setName(lead.getName());
-        dto.setEmail(lead.getEmail());
-        dto.setPhone(lead.getPhone());
-        dto.setStatus(lead.getStatus());
-        dto.setScore(lead.getScore());
-        return dto;
+    @Override
+    public List<LeadDTO> filterLeads(Long businessId, Lead.LeadStatus status, Integer minScore, Integer maxScore) {
+        return getAllLeads(businessId).stream()
+                .filter(l -> status == null || l.getStatus() == status)
+                .filter(l -> minScore == null || (l.getScore() != null && l.getScore() >= minScore))
+                .filter(l -> maxScore == null || (l.getScore() != null && l.getScore() <= maxScore))
+                .collect(Collectors.toList());
+    }
+
+    private LeadDTO convertToDTO(Lead lead) {
+        return LeadDTO.builder()
+                .id(lead.getId())
+                .businessId(lead.getBusiness() != null ? lead.getBusiness().getId() : null)
+                .customerId(lead.getCustomer() != null ? lead.getCustomer().getId() : null)
+                .name(lead.getName())
+                .email(lead.getEmail())
+                .phone(lead.getPhone())
+                .company(lead.getCompany())
+                .jobTitle(lead.getJobTitle())
+                .status(lead.getStatus())
+                .score(lead.getScore())
+                .assignedToId(lead.getAssignedTo() != null ? lead.getAssignedTo().getId() : null)
+                .notes(lead.getNotes())
+                .build();
     }
 }

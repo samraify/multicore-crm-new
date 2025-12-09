@@ -3,19 +3,26 @@ package com.multicore.crm.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "customers", indexes = @Index(name = "idx_customer_email", columnList = "email"))
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long businessId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id", nullable = false)
+    private Business business;
 
     @Column(nullable = false)
     private String name;
@@ -34,6 +41,7 @@ public class Customer {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    
     private Boolean deleted = false;
 
     @PrePersist

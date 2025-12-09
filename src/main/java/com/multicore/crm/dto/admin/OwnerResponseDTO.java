@@ -1,4 +1,4 @@
-package com.multicore.crm.dto;
+package com.multicore.crm.dto.admin;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,13 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LoginResponse {
-    private String token;
-    private Long userId;
-    private String email;
-    private String fullName;
-    private Long businessId;
-    private String role;
+public class OwnerResponseDTO {
     private String message;
+    private Long businessId;
+    private Long ownerId;
+    private String ownerEmail;
+    private String businessName;
     private Boolean success;
 }

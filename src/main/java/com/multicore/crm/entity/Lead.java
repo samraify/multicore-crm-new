@@ -5,21 +5,34 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leads")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Lead {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long businessId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "business_id", nullable = false)
+    private Business business;
 
-    private Long customerId; // optional link, or use @ManyToOne Customer
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to_id")
+    private User assignedTo;
 
     @Column(nullable = false)
     private String name;
@@ -30,6 +43,9 @@ public class Lead {
     @Pattern(regexp = "\\+?[0-9]{7,15}")
     private String phone;
 
+    private String company;
+    private String jobTitle;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LeadStatus status = LeadStatus.NEW;
@@ -38,7 +54,12 @@ public class Lead {
     @Max(100)
     private Integer score = 0;
 
+    private String notes;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     public enum LeadStatus { NEW, QUALIFIED, WON, LOST }
