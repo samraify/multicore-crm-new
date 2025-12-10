@@ -8,4 +8,7 @@ import java.util.List;
 public interface DealRepository extends JpaRepository<Deal, Long> {
     List<Deal> findByBusinessId(Long businessId);
     List<Deal> findByBusinessIdAndCustomerId(Long businessId, Long customerId);
+    List<Deal> findByBusinessIdAndStage(Long businessId, Deal.Stage stage);
 }
+
+
