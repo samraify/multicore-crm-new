@@ -1,6 +1,7 @@
 package com.multicore.crm.controller;
 
 import com.multicore.crm.dto.CustomerDto;
+import com.multicore.crm.dto.CustomerBusinessMatchDto;
 import com.multicore.crm.entity.Customer;
 import com.multicore.crm.service.CustomerService;
 import lombok.RequiredArgsConstructor;
@@ -42,5 +43,10 @@ public class CustomerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCustomer(@PathVariable Long id) {
         customerService.deleteCustomer(id);
+    }
+
+    @GetMapping("/{id}/business-matches")
+    public List<CustomerBusinessMatchDto> getCustomerBusinessMatches(@PathVariable Long id) {
+        return customerService.getBusinessMatchesForCustomer(id);
     }
 }

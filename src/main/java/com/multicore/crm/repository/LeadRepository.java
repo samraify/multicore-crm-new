@@ -16,4 +16,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Lead> findByScoreGreaterThanEqual(Integer score);
 
     List<Lead> findByNameContainingIgnoreCase(String name);
+
+    List<Lead> findByCustomerId(Long customerId);
 }
